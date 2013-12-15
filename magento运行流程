@@ -1,0 +1,65 @@
+{main}
+index.php                Mage::run('', 'store')
+\app\Mage.php            Mage_Core_Model_App->run(Array)
+ \app\code\core\Mage\Core\Model\App.php     Mage_Core_Model_App->_initModules()
+\app\code\core\Mage\Core\Model\App.php     Mage_Core_Model_Config->loadModules()
+#加载app/etc/modules/ 的xml文件
+\app\code\core\Mage\Core\Model\Config.php     Mage_Core_Model_Config->_loadDeclaredModules()
+#加载 模块\etc\config.xml
+ \app\code\core\Mage\Core\Model\Config.php        Mage_Core_Model_Config->loadModulesConfiguration(Array, Object(Mage_Core_Model_Config))
+ #读取xml文件
+ \app\code\core\Mage\Core\Model\Config.php        Varien_Simplexml_Config->loadFile('F:\wamp\www\mag...')
+ #读取xml文件内容
+\lib\Varien\Simplexml\Config.php    Varien_Simplexml_Config->loadString('1?     ...', 'Mage_Core_Model...')
+\lib\Varien\Simplexml\Config.php    simplexml_load_string('1?     ...', 'Mage_Core_Model...')
+#加载控制器
+\app\code\core\Mage\Core\Model\App.php    Mage_Core_Controller_Varien_Front->dispatch()
+#获得前台传入的URL信息
+\app\code\core\Mage\Core\Controller\Varien\Front.php        Mage_Core_Controller_Varien_Router_Standard->match(Object(Mage_Core_Controller_Request_Http))
+#获得ControllerClassName，默认index
+\app\code\core\Mage\Core\Controller\Varien\Router\Standard.php    Mage_Core_Controller_Varien_Router_Standard->_validateControllerClassName('Test_Helloworld', 'index')
+#实例化 ControllerClass
+\app\code\core\Mage\Core\Controller\Varien\Router\Standard.php    Mage_Core_Controller_Varien_Router_Standard->_includeControllerClass('F:\wamp\www\mag...', 'Test_Helloworld...')
+#获得Action
+app\code\core\Mage\Core\Controller\Varien\Router\Standard.php(250): Mage_Core_Controller_Varien_Action->dispatch('index')
+#运行action
+\app\code\core\Mage\Core\Controller\Varien\Action.php        Test_Helloworld_IndexController->indexAction()
+#加载Layout：loadLayout
+ \app\code\community\Test\Helloworld\controllers\IndexController.php        Mage_Core_Controller_Varien_Action->loadLayout()
+\app\code\core\Mage\Core\Controller\Varien\Action.php                Mage_Core_Controller_Varien_Action->loadLayoutUpdates()
+\app\code\core\Mage\Core\Controller\Varien\Action.php                Mage_Core_Model_Layout_Update->load()
+#获得模板名字
+app\code\core\Mage\Core\Model\Layout\Update.php        Mage_Core_Model_Layout_Update->merge('default')
+app\code\core\Mage\Core\Model\Layout\Update.php        Mage_Core_Model_Layout_Update->fetchPackageLayoutUpdates('default')
+app\code\core\Mage\Core\Model\Layout\Update.php        Mage_Core_Model_Layout_Update->fetchFileLayoutUpdates()
+#加载layout下的xml的内容
+app\code\core\Mage\Core\Model\Layout\Update.php        simplexml_load_string('getFileLayoutUpdatesXml('frontend', 'default', 'default', '1')
+#渲染layout：renderLayout，解析xml文件
+app\code\community\Test\Helloworld\controllers\IndexController.php        Mage_Core_Controller_Varien_Action->renderLayout()
+app\code\core\Mage\Core\Controller\Varien\Action.php                    Mage_Core_Model_Layout->getOutput()
+#加载template
+\app\code\core\Mage\Core\Model\Layout.php                            Mage_Core_Block_Abstract->toHtml()
+\app\code\core\Mage\Core\Block\Abstract.php                        Mage_Core_Block_Template->_toHtml()
+\app\code\core\Mage\Core\Block\Template.php                        Mage_Core_Block_Template->renderView()
+\app\code\core\Mage\Core\Block\Template.php                        Mage_Core_Block_Template->fetchView('frontend\defaul...')
+app\code\core\Mage\Core\Block\Template.php                        include('F:\wamp\www\mag...\simplae_page.phtml')
+#解析template文件    getChildHtml()
+\app\design\frontend\default\default\template\Helloworld\simple_page.phtml    Mage_Core_Block_Abstract->getChildHtml('customer_form_r...')
+\app\code\core\Mage\Core\Block\Abstract.php                            Mage_Core_Block_Abstract->_getChildHtml('customer_form_r...', true)
+\app\code\core\Mage\Core\Block\Abstract.php                            Mage_Core_Block_Abstract->toHtml()
+\app\code\core\Mage\Core\Block\Abstract.php                            Mage_Core_Block_Template->_toHtml()
+\app\code\core\Mage\Core\Block\Template.php                            Mage_Core_Block_Template->renderView()
+\app\code\core\Mage\Core\Block\Template.php                            Mage_Core_Block_Template->fetchView('frontend\base\d...')
+\app\code\core\Mage\Core\Block\Template.php                            include('F:\wamp\www\mag...\customer/form/register.phtml')
+\app\design\frontend\base\default\template\customer\form\register.phtml        Mage_Core_Block_Abstract->toHtml()
+\app\code\core\Mage\Core\Block\Abstract.php                            Mage_Core_Block_Template->_toHtml()
+\app\code\core\Mage\Core\Block\Template.php                            Mage_Core_Block_Template->renderView()
+\app\code\core\Mage\Core\Block\Template.php                            Mage_Core_Block_Template->fetchView('frontend\base\d...')
+\app\code\core\Mage\Core\Block\Template.php                            include('F:\wamp\www\mag...')
+\app\design\frontend\base\default\template\customer\widget\name.phtml        Mage_Customer_Block_Widget_Name->getContainerClassName()
+#加载系统widget
+\app\code\core\Mage\Customer\Block\Widget\Name.php                    Mage_Customer_Block_Widget_Name->showPrefix()
+\app\code\core\Mage\Customer\Block\Widget\Name.php                    Mage_Customer_Block_Widget_Name->_getAttribute('prefix')
+\app\code\core\Mage\Customer\Block\Widget\Name.php                    Mage_Customer_Block_Widget_Abstract->_getAttribute('prefix')
+\app\code\core\Mage\Customer\Block\Widget\Abstract.php                    Mage_Eav_Model_Config->getAttribute('customer', 'prefix')
+\app\code\core\Mage\Eav\Model\Config.php                                Mage_Eav_Model_Config->getEntityType('customer')
