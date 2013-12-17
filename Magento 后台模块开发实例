@@ -1,0 +1,196 @@
+Magento 后台模块开发实例 
+
+ 
+
+在这一章节，我们来梳理一下之前几章的内容，更加完整性的走一遍，下面所列出步骤中的代码可以在这里下载，解压后直接复制进项目即可看出效果 
+
+ 
+
+下载: Magento-Backend-Module-Full.zip (16.0 KB) 
+
+ 
+
+空间名 / Namespace :   Company 
+
+ 
+
+模块名 / Module Name : Web 
+
+ 
+
+ 
+
+步骤一、声明模块及其代码池 
+
+ 
+
+建立 /app/etc/modules/Company_Web.xml 文件 （你可以任意定义名字，也可以用一个文件来声明多个模块） 
+
+123456789 <?xml version="1.0"?> <CONFIG>     <MODULES>         <COMPANY_WEB>             <ACTIVE>true</ACTIVE>             <CODEPOOL>local</CODEPOOL>         </COMPANY_WEB>     </MODULES> </CONFIG> 
+ 
+
+步骤二、在 /app/code/local/ 目录下为该模块建立底层目录 
+
+123456789 Company/       |–Web/       ||–Block/       ||–controllers/       ||–etc/       ||–Helper/       ||–sql/     | 
+ 
+
+步骤三、为前台创建一个控制器 
+
+ 
+
+/app/code/local/Company/Web/controllers/IndexController.php 
+
+123456789 class Company_Web_IndexController              extends Mage_Core_Controller_Front_Action {     public function indexAction()     {         $this->loadLayout();          $this->renderLayout();     } } 
+ 
+
+步骤四、 继续为后台创建一个控制器 
+
+ 
+
+app\code\local\Company\Web\controllers\Adminhtml\WebController.php 
+
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899100101102103104105106107108109110111112113114115116117118119120121122123124125126127128129130131132133134135136137138139140141142143144145146147148149150151152153154155156157158159160161162163164165166167168169170171172173174175176177178179180181182183184185186187188189190191192193194195196197198199200201202203204205206207208209210211212213 class Company_Web_Adminhtml_WebController              extends Mage_Adminhtml_Controller_action {     protected function _initAction()     {         $this->loadLayout()->_setActiveMenu('web/items')                            ->_addBreadcrumb(                       Mage::helper('adminhtml')->__('Items Manager'),                                   Mage::helper('adminhtml')->__('Item Manager')                          );         return $this;     }           public function indexAction()     {         $this->_initAction()->renderLayout();     }       public function editAction()     {         $id    = $this->getRequest()->getParam('id');         $model = Mage::getModel('web/web')->load($id);           if ($model->getId() || $id == 0) {            $data = Mage::getSingleton('adminhtml/session')->getFormData(true);            if (!empty($data)) {                $model->setData($data);            }                         Mage::register('web_data', $model);              $this->loadLayout();            $this->_setActiveMenu('web/items');              $this->_addBreadcrumb(                           Mage::helper('adminhtml')->__('Item Manager'),                                    Mage::helper('adminhtml')->__('Item Manager')            );            $this->_addBreadcrumb(                           Mage::helper('adminhtml')->__('Item News'),                               Mage::helper('adminhtml')->__('Item News')            );              $this->getLayout()->getBlock('head')->setCanLoadExtJs(true);              $this->_addContent(                       $this->getLayout()->createBlock('web/adminhtml_web_edit')                 )                 ->_addLeft(                       $this->getLayout()->createBlock('web/adminhtml_web_edit_tabs'                );              $this->renderLayout();           } else {              Mage::getSingleton('adminhtml/session')->addError(                           Mage::helper('web')->__('Item does not exist')            );            $this->_redirect('*/*/');         }     }       public function newAction()     {         $this->_forward('edit');     }       public function saveAction()     {         if ($data = $this->getRequest()->getPost()) {             if(isset($_FILES['filename']['name'])                      &&                       $_FILES['filename']['name'] != '') {                 try {                      /* 开始上传 */                      $uploader = new Varien_File_Uploader('filename');                     /* 允许的扩展名 */                    $uploader->setAllowedExtensions(                                      array('jpg','jpeg','gif','png')                                );                       $uploader->setAllowRenameFiles(false);                     // 设置文件上传模式                     // false -> 从指定的文件夹直接获得文件                     // true ->  获取文件像文件夹一样                      // (file.jpg 上传后会像这样 /media/f/i/file.jpg)                     $uploader->setFilesDispersion(false);                     // 我们设置 'media' 作为上传后的文件夹                     $path = Mage::getBaseDir('media') . DS ;                     $uploader->save($path, $_FILES['filename']['name'] );                 } catch (Exception $e) {                                }                                   //这样我们把文件名存进了数据库                 $data['filename'] = $_FILES['filename']['name'];             }               $model = Mage::getModel('web/web');              $model->setData(                         $data)->setId($this->getRequest()->getParam('id')             );               try {                 if ($model->getCreatedTime == NULL                      ||  $model->getUpdateTime() == NULL) {                                       $model->setCreatedTime(now())->setUpdateTime(now());                 } else {                     $model->setUpdateTime(now());                 }                    $model->save();                 Mage::getSingleton('adminhtml/session')->addSuccess(                     Mage::helper('web')->__('Item was successfully saved')                 );                 Mage::getSingleton('adminhtml/session')->setFormData(false);                   if ($this->getRequest()->getParam('back')) {                     $this->_redirect('*/*/edit', array('id' => $model->getId()));                     return;                 }                 $this->_redirect('*/*/');                 return;             } catch (Exception $e) {                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());                 Mage::getSingleton('adminhtml/session')->setFormData($data);                 $this->_redirect('*/*/edit',                                   array('id' => $this->getRequest()->getParam('id'))                 );                 return;             }         }         Mage::getSingleton('adminhtml/session')->addError(                   Mage::helper('web')->__('Unable to find item to save')         );         $this->_redirect('*/*/');     }       public function deleteAction()      {         if( $this->getRequest()->getParam('id') > 0 ) {             try {                 $model = Mage::getModel('web/web');                 $model->setId($this->getRequest()->getParam('id'))                       ->delete();                 Mage::getSingleton('adminhtml/session')->addSuccess(                         Mage::helper('adminhtml')->__('Item was successfully deleted')                 );                 $this->_redirect('*/*/');             } catch (Exception $e) {                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());                 $this->_redirect('*/*/edit',                                   array('id' => $this->getRequest()->getParam('id'))                 );             }         }         $this->_redirect('*/*/');     }       public function massDeleteAction()      {         $webIds = $this->getRequest()->getParam('web');         if(!is_array($webIds)) {             Mage::getSingleton('adminhtml/session')->addError(                   Mage::helper('adminhtml')->__('Please select item(s)')             );         } else {             try {                 foreach ($webIds as $webId) {                     $web = Mage::getModel('web/web')->load($webId);                     $web->delete();                 }                 Mage::getSingleton('adminhtml/session')->addSuccess(                     Mage::helper('adminhtml')->__(                         'Total of %d record(s) were successfully deleted',                          count($webIds)                     )                 );             } catch (Exception $e) {                 Mage::getSingleton('adminhtml/session')->addError($e->getMessage());             }         }         $this->_redirect('*/*/index');     }       public function massStatusAction()     {         $webIds = $this->getRequest()->getParam('web');         if(!is_array($webIds)) {             Mage::getSingleton('adminhtml/session')                   ->addError($this->__('Please select item(s)'));         } else {             try {                 foreach ($webIds as $webId) {                     $web = Mage::getSingleton('web/web')->load($webId)                                  ->setStatus($this->getRequest()->getParam('status'))                                  ->setIsMassupdate(true)                                  ->save();                 }                 $this->_getSession()                      ->addSuccess(                             $this->__('Total of %d record(s) were successfully updated',                              count($webIds))                      );             } catch (Exception $e) {                 $this->_getSession()->addError($e->getMessage());             }         }         $this->_redirect('*/*/index');     } } 
+ 
+
+步骤五、创建一个前台的 Block 文件 
+
+ 
+
+app/code/local/Company/Web/Block/Web.php 
+
+123456789101112131415 class Company_Web_Block_Web extends Mage_Core_Block_Template {     public function _prepareLayout()     {         return parent::_prepareLayout();     }       public function getWeb()      {          if (!$this->hasData('web')) {             $this->setData('web', Mage::registry('web'));         }         return $this->getData('web');     } } 
+ 
+
+步骤六、创建一个后台的 Block 文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web.php 
+
+123456789101112 class Company_Web_Block_Adminhtml_Web      extends Mage_Adminhtml_Block_Widget_Grid_Container {     public function __construct()     {         $this->_controller     = 'adminhtml_web';         $this->_blockGroup     = 'web';         $this->_headerText     = Mage::helper('web')->__('Item Manager');         $this->_addButtonLabel = Mage::helper('web')->__('Add Item');         parent::__construct();     } } 
+ 
+
+步骤七、创建如下文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web/Grid.php 
+
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899100101102103104105106107108109110111112113 class Company_Web_Block_Adminhtml_Web_Grid                  extends Mage_Adminhtml_Block_Widget_Grid {   public function __construct()   {       parent::__construct();       $this->setId('webGrid');       $this->setDefaultSort('web_id');       $this->setDefaultDir('ASC');       $this->setSaveParametersInSession(true);   }     protected function _prepareCollection()   {       $collection = Mage::getModel('web/web')->getCollection();       $this->setCollection($collection);       return parent::_prepareCollection();   }     protected function _prepareColumns()   {       $this->addColumn('web_id', array(           'header'    =>  Mage::helper('web')->__('ID'),           'align'     =>  'right',           'width'     =>  '50px',           'index'     =>  'web_id',       ));         $this->addColumn('title', array(           'header'    =>  Mage::helper('web')->__('Title'),           'align'     =>  'left',           'index'     =>  'title',       ));         /*       $this->addColumn('content', array(           'header'    =>  Mage::helper('web')->__('Item Content'),           'width'     =>  '150px',           'index'     =>  'content',       ));       */        $this->addColumn('status', array(           'header'    =>  Mage::helper('web')->__('Status'),           'align'     =>  'left',           'width'     =>  '80px',           'index'     =>  'status',           'type'      =>  'options',           'options'   =>  array(                              1 => 'Enabled',                              2 => 'Disabled',           ),       ));               $this->addColumn('action', array(           'header'    =>  Mage::helper('web')->__('Action'),           'width'     =>  '100',           'type'      =>  'action',           'getter'    =>  'getId',           'actions'   =>  array(                              array(                                 'caption'   =>  Mage::helper('web')->__('Edit'),                                 'url'       =>  array('base'=> '*/*/edit'),                                 'field'     =>  'id'                             )           ),           'filter'    =>  false,           'sortable'  =>  false,           'index'     =>  'stores',           'is_system' =>  true,       ));                 $this->addExportType('*/*/exportCsv', Mage::helper('web')->__('CSV'));       $this->addExportType('*/*/exportXml', Mage::helper('web')->__('XML'));               return parent::_prepareColumns();   }     protected function _prepareMassaction()   {       $this->setMassactionIdField('web_id');       $this->getMassactionBlock()->setFormFieldName('web');         $this->getMassactionBlock()->addItem('delete', array(                  'label'       =>  Mage::helper('web')->__('Delete'),                  'url'         =>  $this->getUrl('*/*/massDelete'),                  'confirm'     =>  Mage::helper('web')->__('Are you sure?')       ));         $statuses = Mage::getSingleton('web/status')->getOptionArray();         array_unshift($statuses, array('label'=>'', 'value'=>''));       $this->getMassactionBlock()->addItem('status', array(                  'label'       =>  Mage::helper('web')->__('Change status'),                  'url'         =>  $this->getUrl('*/*/massStatus', array('_current'=>true)),                  'additional'  => array(                                     'visibility' => array(                                                      'name'   => 'status',                                                      'type'   => 'select',                                                      'class'  => 'required-entry',                                                      'label'  => Mage::helper('web')->__('Status'),                                                      'values' => $statuses                                                    )                                   )       ));       return $this;   }     public function getRowUrl($row)   {       return $this->getUrl('*/*/edit', array('id' => $row->getId()));   } } 
+ 
+
+步骤八、创建如下文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web/Edit.php 
+
+12345678910111213141516171819202122232425262728293031323334353637383940414243444546 class Company_Web_Block_Adminhtml_Web_Edit              extends Mage_Adminhtml_Block_Widget_Form_Container {     public function __construct()     {         parent::__construct();                            $this->_objectId   = 'id';         $this->_blockGroup = 'web';         $this->_controller = 'adminhtml_web';                   $this->_updateButton('save', 'label', Mage::helper('web')->__('Save Item'));         $this->_updateButton('delete', 'label', Mage::helper('web')->__('Delete Item'));                   $this->_addButton('saveandcontinue', array(             'label'     => Mage::helper('adminhtml')->__('Save And Continue Edit'),             'onclick'   => 'saveAndContinueEdit()',             'class'     => 'save',         ), -100);           $this->_formScripts[] = "             function toggleEditor() {                 if (tinyMCE.getInstanceById('web_content') == null) {                     tinyMCE.execCommand('mceAddControl', false, 'web_content');                 } else {                     tinyMCE.execCommand('mceRemoveControl', false, 'web_content');                 }             }               function saveAndContinueEdit(){                 editForm.submit($('edit_form').action+'back/edit/');             }         ";     }       public function getHeaderText()     {         if( Mage::registry('web_data') && Mage::registry('web_data')->getId() ) {             return Mage::helper('web')->__("Edit Item '%s'",                                             $this->htmlEscape(Mage::registry('web_data')->getTitle())                    );         } else {             return Mage::helper('web')->__('Add Item');         }     } } 
+ 
+
+步骤九、创建如下文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web/Edit/Tabs.php 
+
+1234567891011121314151617181920212223 class Company_Web_Block_Adminhtml_Web_Edit_Tabs                  extends Mage_Adminhtml_Block_Widget_Tabs {     public function __construct()   {       parent::__construct();       $this->setId('web_tabs');       $this->setDestElementId('edit_form');       $this->setTitle(Mage::helper('web')->__('Item Information'));   }     protected function _beforeToHtml()   {       $this->addTab('form_section', array(           'label'     => Mage::helper('web')->__('Item Information'),           'title'     => Mage::helper('web')->__('Item Information'),           'content'   => $this->getLayout()->createBlock('web/adminhtml_web_edit_tab_form')->toHtml(),       ));              return parent::_beforeToHtml();   } } 
+ 
+
+步骤十、创建如下文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web/Edit/Form.php 
+
+12345678910111213141516171819202122 class Company_Web_Block_Adminhtml_Web_Edit_Form              extends Mage_Adminhtml_Block_Widget_Form {   protected function _prepareForm()   {       $form = new Varien_Data_Form(                array(                   'id' => 'edit_form',                   'action' => $this->getUrl(                                     '*/*/save',                                      array('id' => $this->getRequest()->getParam('id'))                   ),                   'method' => 'post',                   'enctype' => 'multipart/form-data'               )       );         $form->setUseContainer(true);       $this->setForm($form);       return parent::_prepareForm();   } } 
+ 
+
+步骤十一、创建如下文件 
+
+ 
+
+app/code/local/Company/Web/Block/Adminhtml/Web/Edit/Tab/Form.php 
+
+12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061 class Company_Web_Block_Adminhtml_Web_Edit_Tab_Form                      extends Mage_Adminhtml_Block_Widget_Form {   protected function _prepareForm()   {       $form = new Varien_Data_Form();       $this->setForm($form);       $fieldset = $form->addFieldset(                             'web_form',                              array('legend'=>Mage::helper('web')->__('Item information'))       );              $fieldset->addField('title', 'text', array(           'label'     => Mage::helper('web')->__('Title'),           'class'     => 'required-entry',           'required'  => true,           'name'      => 'title',       ));         $fieldset->addField('filename', 'file', array(           'label'     => Mage::helper('web')->__('File'),           'required'  => false,           'name'      => 'filename',       ));                 $fieldset->addField('status', 'select', array(           'label'     => Mage::helper('web')->__('Status'),           'name'      => 'status',           'values'    => array(                               array(                                   'value'     => 1,                                   'label'     => Mage::helper('web')->__('Enabled'),                               ),                               array(                                   'value'     => 2,                                   'label'     => Mage::helper('web')->__('Disabled'),                               ),           ),       ));              $fieldset->addField('content', 'editor', array(           'name'      => 'content',           'label'     => Mage::helper('web')->__('Content'),           'title'     => Mage::helper('web')->__('Content'),           'style'     => 'width:700px; height:500px;',           'wysiwyg'   => false,           'required'  => true,       ));              if ( Mage::getSingleton('adminhtml/session')->getWebData() )       {           $form->setValues(Mage::getSingleton('adminhtml/session')->getWebData());           Mage::getSingleton('adminhtml/session')->setWebData(null);       } elseif ( Mage::registry('web_data') ) {           $form->setValues(Mage::registry('web_data')->getData());       }               return parent::_prepareForm();           } } 
+ 
+
+步骤十二、创建如下 config 文件 
+
+ 
+
+app/code/local/Company/Web/etc/config.xml 
+
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899100101102103104105106107108109110111112113114115116117118119120 <?xml version="1.0"?> <CONFIG>     <MODULES>         <COMPANY_WEB>             <VERSION>0.1.0</VERSION>         </COMPANY_WEB>     </MODULES>     <FRONTEND>         <ROUTERS>             <WEB>                 <USE>standard</USE>                 <ARGS>                     <MODULE>Company_Web</MODULE>                     <FRONTNAME>web</FRONTNAME>                 </ARGS>             </WEB>         </ROUTERS>         <LAYOUT>             <UPDATES>                 <WEB>                     <FILE>web.xml</FILE>                 </WEB>             </UPDATES>         </LAYOUT>     </FRONTEND>     <ADMIN>         <ROUTERS>             <WEB>                 <USE>admin</USE>                 <ARGS>                     <MODULE>Company_Web</MODULE>                     <FRONTNAME>web</FRONTNAME>                 </ARGS>             </WEB>         </ROUTERS>     </ADMIN>     <ADMINHTML>         <MENU>             <WEB module="web">                                   <SORT_ORDER>71</SORT_ORDER>                                <CHILDREN>                     <ITEMS module="web">                                                   <SORT_ORDER>0</SORT_ORDER>                         <ACTION>web/adminhtml_web</ACTION>                     </ITEMS>                 </CHILDREN>             </WEB>         </MENU>         <ACL>             <RESOURCES>                 <ALL>                                       </ALL>                 <ADMIN>                     <CHILDREN>                         <COMPANY_WEB>                                                           <SORT_ORDER>10</SORT_ORDER>                         </COMPANY_WEB>                     </CHILDREN>                 </ADMIN>             </RESOURCES>         </ACL>         <LAYOUT>             <UPDATES>                 <WEB>                     <FILE>web.xml</FILE>                 </WEB>             </UPDATES>         </LAYOUT>     </ADMINHTML>        <GLOBAL>         <MODELS>             <WEB>                 <CLASS>Company_Web_Model</CLASS>                 <RESOURCEMODEL>web_mysql4</RESOURCEMODEL>             </WEB>             <WEB_MYSQL4>                 <CLASS>Company_Web_Model_Mysql4</CLASS>                 <ENTITIES>                     <WEB>                         <TABLE>web</TABLE>                     </WEB>                 </ENTITIES>             </WEB_MYSQL4>         </MODELS>         <RESOURCES>             <WEB_SETUP>                 <SETUP>                     <MODULE>Company_Web</MODULE>                 </SETUP>                 <CONNECTION>                     <USE>core_setup</USE>                 </CONNECTION>             </WEB_SETUP>             <WEB_WRITE>                 <CONNECTION>                     <USE>core_write</USE>                 </CONNECTION>             </WEB_WRITE>             <WEB_READ>                 <CONNECTION>                     <USE>core_read</USE>                 </CONNECTION>             </WEB_READ>         </RESOURCES>         <BLOCKS>             <WEB>                 <CLASS>Company_Web_Block</CLASS>             </WEB>         </BLOCKS>         <HELPERS>             <WEB>                 <CLASS>Company_Web_Helper</CLASS>             </WEB>         </HELPERS>     </GLOBAL> </CONFIG> 
+ 
+
+步骤十三、创建 Helper 类 
+
+ 
+
+app/code/local/Company/Web/Helper/Data.php 
+
+123 class Company_Web_Helper_Data extends Mage_Core_Helper_Abstract { } 
+ 
+
+步骤十四、创建 Model 类 
+
+ 
+
+app/code/local/Company/Web/Model/Web.php 
+
+12345678 class Company_Web_Model_Web extends Mage_Core_Model_Abstract {     public function _construct()     {         parent::_construct();         $this->_init('web/web');     } } 
+ 
+
+步骤十五、创建 Resource Model 类 
+
+ 
+
+app/code/local/Company/Web/Model/Mysql4/Web.php 
+
+12345678 class Company_Web_Model_Mysql4_Web              extends Mage_Core_Model_Mysql4_Abstract {     public function _construct()     {          $this->_init('web/web', 'web_id');     } } 
+ 
+
+步骤十六、创建 Collection 类 
+
+ 
+
+app/code/local/Company/Web/Model/Mysql4/Web/Collection.php 
+
+123456789 class Company_Web_Model_Mysql4_Web_Collection          extends Mage_Core_Model_Mysql4_Collection_Abstract {     public function _construct()     {         parent::_construct();         $this->_init('web/web');     } } 
+ 
+
+步骤十七、创建 Mysql 文件 
+
+ 
+
+app/code/local/Company/Web/sql/web_setup/mysql4-install-0.1.0.php 
+
+12345678910111213141516171819 $installer = $this; $installer->startSetup(); $installer->run("   -- DROP TABLE IF EXISTS {$this->getTable('web')}; CREATE TABLE {$this->getTable('web')} ( `web_id` int(11) unsigned NOT NULL auto_increment, `title` varchar(255) NOT NULL default '', `filename` varchar(255) NOT NULL default '', `content` text NOT NULL default '', `status` smallint(6) NOT NULL default '0', `created_time` datetime NULL, `update_time` datetime NULL, PRIMARY KEY (`web_id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8;   ");   $installer->endSetup(); 
+ 
+
+步骤十八、创建前台layout.xml 
+
+ 
+
+app/design/frontend/default/default/layout/web.xml 
+
+12345678910 <?xml version="1.0"?> <LAYOUT version="0.1.0">     <DEFAULT>     </DEFAULT>     <WEB_INDEX_INDEX>         <REFERENCE name="content">             <BLOCK name="web" type="web/web" template="web/web.phtml" />         </REFERENCE>     </WEB_INDEX_INDEX> </LAYOUT> 
+ 
+
+步骤十九、创建后台layout.xml 
+
+ 
+
+app/design/adminhtml/default/default/layout/web.xml 
+
+1234567 <LAYOUT version="0.1.0">     <WEB_ADMINHTML_WEB_INDEX>         <REFERENCE name="content">             <BLOCK name="web" type="web/adminhtml_web" />         </REFERENCE>     </WEB_ADMINHTML_WEB_INDEX> </LAYOUT> 
+ 
+
+步骤二十、创建 template 文件 
+
+ 
+
+app\design\frontend\default\default\template\web\web.phtml 
+
+1 echo "好了，终于完成了自定义的模块，累死我了...."; 
