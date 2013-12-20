@@ -1,0 +1,31 @@
+ /**
+ * 命令行格式 rsync -vzrtopg --progress --delete --password-file=FILE PATH rsync://USER@HOST/MODULE 2>&1
+ * 命令行参数
+ * --password-file=FILE : 指定静态服务器密码文件
+ * PATH : 指定同步文件源路径
+ * USER : 目标主机用户
+ * HOST : 目标主机
+ * MODULE : 配置模块(静态服务器rsyncd.conf中配置的模块名称)
+ */
+
+//同步首页文件
+foreach($langs as $l => $g)
+{
+    if($l!=$curlang)    continue;
+
+    $command_index =  'rsync -vzrtopgu --progress --password-file=' . $server['password_file'] . ' ' . $server['cms_dir'] . '/'.$l . '/index/ rsync://' .  $server['username']
+    . '@' . $server['host'] . '/' . $server['module'] . ' 2>&1';
+    if(!Release::exec($command_index,$server['host'], $curlang))
+    {
+        $return = false;
+        continue;
+    }
+}
+//同步文件夹
+$command = 'rsync -vzrtopgu --progress --delete --password-file=' . $server['password_file'] . ' ' . $server['cms_dir'] . ' rsync://' .  $server['username']
+                    . '@' . $server['host'] . '/' . $server['module'] . ' 2>&1';
+if(!Release::exec($command,$server['host'],$curlang))
+{
+    $return = false;
+    continue;
+}
