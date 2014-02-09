@@ -1,0 +1,7 @@
+Now we are ready to compile and link our PHP extension
+
+$phpize
+$CFLAGS=-m32 CPPFLAGS=-m32 CCASFLAGS=-m32 ./configure
+$make
+
+http://montenasoft.com/en/blog/how-install-pecl-php-extension-64bit-linux-while-you-are-using-32bit-xampp
